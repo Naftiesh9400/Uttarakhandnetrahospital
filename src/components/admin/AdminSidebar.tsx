@@ -10,7 +10,8 @@ import {
   Lock,
   Calendar,
   MessageSquare,
-  LogOut
+  LogOut,
+  Instagram
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { adminLogout } from '@/lib/adminAuth';
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Why Choose Us', href: '/admin/features', icon: Shield },
   { name: 'SEO', href: '/admin/seo', icon: Globe },
   { name: 'Home Video', href: '/admin/home-settings', icon: Video },
+  { name: 'Insta Reels', href: '/admin/reels', icon: Instagram },
   { name: 'Admins', href: '/admin/users', icon: Lock },
   { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
   { name: 'Contact Requests', href: '/admin/contacts', icon: MessageSquare },
