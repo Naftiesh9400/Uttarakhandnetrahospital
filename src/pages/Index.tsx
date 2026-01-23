@@ -9,6 +9,7 @@ import { SEO } from "@/components/SEO";
 import { VideoSection } from "@/components/home/VideoSection";
 import { WhatsAppChat } from "@/components/home/WhatsAppChat";
 import { InstaReel } from "@/components/InstaReel";
+import DownloadApp from "@/components/DownloadApp";
 
 const Index = () => {
   return (
@@ -21,6 +22,7 @@ const Index = () => {
       <DoctorsSection />
       <TestimonialsSection />
       <InstaReel />
+      <DownloadApp />
       <CTASection />
       <WhatsAppChat />
     </Layout>

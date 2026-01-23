@@ -4,6 +4,8 @@ import { ArrowRight, Shield, Award, Users } from "lucide-react";
 import heroImage from "@/assets/hero-eye.jpg";
 import { useEffect, useState, useRef } from "react";
 
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=2080&auto=format&fit=crop";
+
 const stats = [
   { icon: Users, value: "50,000+", label: "Patients Treated" },
   { icon: Award, value: "15+", label: "Years Experience" },
@@ -130,6 +132,9 @@ export function HeroSection() {
                 src={heroImage}
                 alt="Advanced eye care technology"
                 className="w-full h-[600px] object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = FALLBACK_IMAGE;
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/20 to-transparent" />
             </div>
