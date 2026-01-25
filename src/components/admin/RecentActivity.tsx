@@ -1,4 +1,4 @@
-import { Calendar, MessageSquare, Star, FileText, User } from 'lucide-react';
+import { Calendar, MessageSquare, Star, FileText } from 'lucide-react';
 
 export const RecentActivity = () => {
   // Mock data - in a real app, this would come from your backend/firebase

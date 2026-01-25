@@ -1,50 +1,59 @@
 import { useEffect, useState } from 'react';
-import { Users, Eye, Activity, TrendingUp } from 'lucide-react';
+import { Users, Calendar, Activity, Clock } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, Timestamp } from 'firebase/firestore';
 
 interface VisitorData {
-  totalVisitors: number;
-  activeNow: number;
-  todayVisits: number;
-  monthlyGrowth: number;
+  totalAppointments: number;
+  pendingAppointments: number;
+  todayAppointments: number;
+  totalDoctors: number;
 }
 
 export const VisitorStats = () => {
   const [stats, setStats] = useState<VisitorData>({
-    totalVisitors: 0,
-    activeNow: 0,
-    todayVisits: 0,
-    monthlyGrowth: 0
+    totalAppointments: 0,
+    pendingAppointments: 0,
+    todayAppointments: 0,
+    totalDoctors: 0
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Note: In a production environment, you would fetch this data from a 
-        // dedicated 'stats' collection or use a cloud function to aggregate 'visitors'.
-        // For now, we are simulating the data structure.
-        
-        // Example fetch:
-        // const statsDoc = await getDoc(doc(db, 'admin_stats', 'visitors'));
-        // if (statsDoc.exists()) setStats(statsDoc.data() as VisitorData);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
-        // Mock data for display
-        setStats({
-          totalVisitors: 15420,
-          activeNow: 8,
-          todayVisits: 142,
-          monthlyGrowth: 12.5
-        });
-      } catch (error) {
-        console.error("Error fetching visitor stats:", error);
-      } finally {
-        setLoading(false);
-      }
+    // Listen to Appointments
+    const unsubAppointments = onSnapshot(collection(db, 'appointments'), (snapshot) => {
+      const total = snapshot.size;
+      const pending = snapshot.docs.filter(doc => doc.data().status === 'pending').length;
+      
+      // Calculate today's appointments
+      const today = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        if (!data.createdAt) return false;
+        const date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+        return date >= startOfToday;
+      }).length;
+
+      setStats(prev => ({
+        ...prev,
+        totalAppointments: total,
+        pendingAppointments: pending,
+        todayAppointments: today
+      }));
+      setLoading(false);
+    });
+
+    // Listen to Doctors
+    const unsubDoctors = onSnapshot(collection(db, 'doctors'), (snapshot) => {
+      setStats(prev => ({ ...prev, totalDoctors: snapshot.size }));
+    });
+
+    return () => {
+      unsubAppointments();
+      unsubDoctors();
     };
-
-    fetchStats();
   }, []);
 
   if (loading) {
@@ -60,35 +69,35 @@ export const VisitorStats = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <StatCard
-        title="Total Visitors"
-        value={stats.totalVisitors.toLocaleString()}
-        icon={<Users className="h-5 w-5 text-blue-600" />}
-        description="All time visits"
-        trend="+12% this month"
+        title="Total Appointments"
+        value={stats.totalAppointments.toLocaleString()}
+        icon={<Calendar className="h-5 w-5 text-blue-600" />}
+        description="All time appointments"
+        trend="Lifetime"
         trendUp={true}
       />
       <StatCard
-        title="Active Now"
-        value={stats.activeNow.toString()}
-        icon={<Activity className="h-5 w-5 text-green-600" />}
-        description="Current active users"
-        trend="Live"
+        title="Pending Requests"
+        value={stats.pendingAppointments.toString()}
+        icon={<Clock className="h-5 w-5 text-orange-600" />}
+        description="Awaiting approval"
+        trend="Action needed"
+        trendUp={false}
+      />
+      <StatCard
+        title="Today's Appointments"
+        value={stats.todayAppointments.toLocaleString()}
+        icon={<Activity className="h-5 w-5 text-purple-600" />}
+        description="New requests today"
+        trend="Daily activity"
         trendUp={true}
       />
       <StatCard
-        title="Today's Visits"
-        value={stats.todayVisits.toLocaleString()}
-        icon={<Eye className="h-5 w-5 text-purple-600" />}
-        description="Unique visits today"
-        trend="+5% from yesterday"
-        trendUp={true}
-      />
-      <StatCard
-        title="Growth"
-        value={`${stats.monthlyGrowth}%`}
-        icon={<TrendingUp className="h-5 w-5 text-orange-600" />}
-        description="Monthly growth rate"
-        trend="Consistent growth"
+        title="Total Doctors"
+        value={stats.totalDoctors.toString()}
+        icon={<Users className="h-5 w-5 text-green-600" />}
+        description="Active medical staff"
+        trend="Team size"
         trendUp={true}
       />
     </div>

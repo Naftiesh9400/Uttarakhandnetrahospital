@@ -10,6 +10,7 @@ import { VideoSection } from "@/components/home/VideoSection";
 import { WhatsAppChat } from "@/components/home/WhatsAppChat";
 import { InstaReel } from "@/components/InstaReel";
 import DownloadApp from "@/components/DownloadApp";
+import { JobApply } from "@/components/JobApply";
 
 const Index = () => {
   return (
@@ -23,6 +24,7 @@ const Index = () => {
       <TestimonialsSection />
       <InstaReel />
       <DownloadApp />
+      <JobApply />
       <CTASection />
       <WhatsAppChat />
     </Layout>

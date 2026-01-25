@@ -23,6 +23,8 @@ import AdminSEO from "./pages/admin/AdminSEO";
 import AdminHomeSettings from "./pages/admin/AdminHomeSettings";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminInstaReels from "./pages/admin/AdminInstaReels";
+import AdminJobApplications from "./pages/admin/AdminJobApplications";
+import AdminJobPositions from "./pages/admin/AdminJobPositions";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +55,8 @@ const App = () => (
           <Route path="/admin/home-settings" element={<AdminHomeSettings />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/reels" element={<AdminInstaReels />} />
+          <Route path="/admin/jobs" element={<AdminJobApplications />} />
+          <Route path="/admin/job-positions" element={<AdminJobPositions />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

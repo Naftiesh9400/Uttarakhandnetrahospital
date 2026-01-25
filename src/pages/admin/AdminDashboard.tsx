@@ -1,36 +1,18 @@
-import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  Users, 
-  Stethoscope, 
-  Calendar, 
-  MessageSquare, 
-  LogOut,
-  TrendingUp
-} from 'lucide-react';
-import { isAdminAuthenticated, adminLogout } from '@/lib/adminAuth';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
+import { VisitorStats } from '@/components/admin/VisitorStats';
+import { isAdminAuthenticated } from '@/lib/adminAuth';
+import { useNavigate } from 'react-router-dom';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useToast } from '@/hooks/use-toast';
+import { format, subDays, startOfDay } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Plus, Calendar, MessageSquare, Users } from 'lucide-react';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const audioRef = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
-  const [stats, setStats] = useState({
-    doctors: 0,
-    services: 0,
-    appointments: 0,
-    pendingAppointments: 0,
-    contacts: 0,
-    unreadContacts: 0,
-  });
-  const [recentAppointments, setRecentAppointments] = useState<any[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<{name: string, count: number}[]>([]);
 
   useEffect(() => {
     if (!isAdminAuthenticated()) {
@@ -38,217 +20,120 @@ const AdminDashboard = () => {
       return;
     }
 
-    const unsubscribers: (() => void)[] = [];
+    const fetchChartData = async () => {
+      try {
+        // Fetch recent appointments
+        const q = query(collection(db, 'appointments'), orderBy('createdAt', 'desc'), limit(50));
+        const querySnapshot = await getDocs(q);
+        
+        // Initialize last 7 days data
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+          const d = subDays(new Date(), i);
+          return {
+            date: startOfDay(d),
+            name: format(d, 'MMM dd'),
+            count: 0
+          };
+        }).reverse();
 
-    // Real-time listeners
-    const unsubDoctors = onSnapshot(collection(db, "doctors"), (snap) => {
-      setStats(prev => ({ ...prev, doctors: snap.size }));
-    });
-    unsubscribers.push(unsubDoctors);
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.createdAt) {
+            const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+            // Find matching day in our last7Days array
+            const dayStat = last7Days.find(day => 
+              createdDate >= day.date && createdDate < new Date(day.date.getTime() + 86400000)
+            );
+            if (dayStat) {
+              dayStat.count++;
+            }
+          }
+        });
 
-    const unsubServices = onSnapshot(collection(db, "services"), (snap) => {
-      setStats(prev => ({ ...prev, services: snap.size }));
-    });
-    unsubscribers.push(unsubServices);
-
-    let isFirstApptLoad = true;
-    const unsubAppointments = onSnapshot(collection(db, "appointments"), (snap) => {
-      const appointments = snap.docs.map(d => d.data());
-      
-      setStats(prev => ({
-        ...prev,
-        appointments: snap.size,
-        pendingAppointments: appointments.filter((a: any) => a.status === 'pending').length,
-      }));
-
-      // Process Chart Data
-      const dateCounts: Record<string, number> = {};
-      appointments.forEach((app: any) => {
-        if (app.preferredDate) {
-          dateCounts[app.preferredDate] = (dateCounts[app.preferredDate] || 0) + 1;
-        }
-      });
-      const chart = Object.entries(dateCounts)
-        .map(([date, count]) => ({ date, count }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(-7);
-      setChartData(chart);
-
-      // Process Recent Appointments
-      const recent = [...appointments].sort((a: any, b: any) => {
-        const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(a.createdAt);
-        const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(b.createdAt);
-        return dateB.getTime() - dateA.getTime();
-      }).slice(0, 5);
-      setRecentAppointments(recent);
-
-      if (!isFirstApptLoad && snap.docChanges().some(change => change.type === 'added')) {
-        audioRef.current.play().catch(() => {});
-        toast({ title: "New Appointment!", description: "A new appointment request has been received." });
+        setChartData(last7Days.map(({ name, count }) => ({ name, count })));
+      } catch (error) {
+        console.error("Error fetching chart data:", error);
       }
-      isFirstApptLoad = false;
-    });
-    unsubscribers.push(unsubAppointments);
+    };
 
-    let isFirstContactLoad = true;
-    const unsubContacts = onSnapshot(collection(db, "contact_requests"), (snap) => {
-      const contacts = snap.docs.map(d => d.data());
-      setStats(prev => ({
-        ...prev,
-        contacts: snap.size,
-        unreadContacts: contacts.filter((c: any) => !c.isRead).length,
-      }));
-
-      if (!isFirstContactLoad && snap.docChanges().some(change => change.type === 'added')) {
-        audioRef.current.play().catch(() => {});
-        toast({ title: "New Contact Request!", description: "You have received a new message." });
-      }
-      isFirstContactLoad = false;
-    });
-    unsubscribers.push(unsubContacts);
-
-    return () => unsubscribers.forEach(unsub => unsub());
-  }, [navigate, toast]);
-
-  const handleLogout = () => {
-    adminLogout();
-    navigate('/admin/login');
-  };
-
-  const statCards = [
-    { 
-      title: 'Total Doctors', 
-      value: stats.doctors, 
-      icon: Users, 
-      color: 'bg-blue-500',
-      link: '/admin/doctors'
-    },
-    { 
-      title: 'Services', 
-      value: stats.services, 
-      icon: Stethoscope, 
-      color: 'bg-green-500',
-      link: '/admin/services'
-    },
-    { 
-      title: 'Appointments', 
-      value: stats.appointments, 
-      subtitle: `${stats.pendingAppointments} pending`,
-      icon: Calendar, 
-      color: 'bg-orange-500',
-      link: '/admin/appointments'
-    },
-    { 
-      title: 'Contact Requests', 
-      value: stats.contacts, 
-      subtitle: `${stats.unreadContacts} unread`,
-      icon: MessageSquare, 
-      color: 'bg-purple-500',
-      link: '/admin/contacts'
-    },
-  ];
+    fetchChartData();
+  }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-muted/30 flex">
+    <div className="flex min-h-screen bg-slate-50">
       <AdminSidebar />
-      
       <div className="flex-1 p-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="max-w-7xl mx-auto space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome to Uttarkhand Netra Hospital Admin Portal</p>
+            <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+            <p className="text-slate-500 mt-1">Welcome back to the admin panel.</p>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-        </div>
+          
+          <VisitorStats />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat) => (
-            <Card 
-              key={stat.title} 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate(stat.link)}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.color}`}>
-                  <stat.icon className="w-4 h-4 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{stat.value}</div>
-                {stat.subtitle && (
-                  <p className="text-sm text-muted-foreground mt-1">{stat.subtitle}</p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Appointment Trends Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Appointment Trends
-              </CardTitle>
-              <CardDescription>Daily appointment requests (Last 7 days)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-semibold mb-4">Appointment Trends (Last 7 Days)</h3>
+              <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      dy={10}
+                    />
+                    <YAxis axisLine={false} tickLine={false} allowDecimals={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      cursor={{ fill: '#f3f4f6' }}
+                    />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Recent Appointments List */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Recent Appointments
-              </CardTitle>
-              <CardDescription>Latest 5 appointment requests</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentAppointments.map((app, i) => (
-                  <div key={i} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                    <div>
-                      <p className="font-medium">{app.patientName}</p>
-                      <p className="text-sm text-muted-foreground">{app.doctor}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{app.preferredDate}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full capitalize ${
-                        app.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        app.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {app.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {recentAppointments.length === 0 && (
-                  <p className="text-center text-muted-foreground py-4">No appointments found</p>
-                )}
+            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all"
+                  onClick={() => navigate('/admin/doctors')}
+                >
+                  <Plus className="w-6 h-6" />
+                  Add Doctor
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all"
+                  onClick={() => navigate('/admin/appointments')}
+                >
+                  <Calendar className="w-6 h-6" />
+                  View Appointments
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all"
+                  onClick={() => navigate('/admin/contacts')}
+                >
+                  <MessageSquare className="w-6 h-6" />
+                  Check Messages
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-pink-50 hover:text-pink-600 hover:border-pink-200 transition-all"
+                  onClick={() => navigate('/admin/jobs')}
+                >
+                  <Users className="w-6 h-6" />
+                  Job Applications
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

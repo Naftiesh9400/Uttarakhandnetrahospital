@@ -11,7 +11,9 @@ import {
   Calendar,
   MessageSquare,
   LogOut,
-  Instagram
+  Instagram,
+  Briefcase,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { adminLogout } from '@/lib/adminAuth';
@@ -29,6 +31,8 @@ const navigation = [
   { name: 'Admins', href: '/admin/users', icon: Lock },
   { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
   { name: 'Contact Requests', href: '/admin/contacts', icon: MessageSquare },
+  { name: 'Job Openings', href: '/admin/job-positions', icon: Briefcase },
+  { name: 'Job Applications', href: '/admin/jobs', icon: FileText },
 ];
 
 const AdminSidebar = () => {
