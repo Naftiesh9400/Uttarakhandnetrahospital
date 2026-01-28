@@ -55,8 +55,8 @@ const DownloadApp = () => {
                   className="h-auto py-3 px-6 bg-primary-foreground hover:bg-primary-foreground/90 text-primary rounded-xl flex items-center gap-3 transition-all hover:scale-105 shadow-lg border-0"
                   onClick={() => {
                     const link = document.createElement('a');
-                    link.href = '/app-release.apk';
-                    link.setAttribute('download', 'UttarakhandNetraHospital.apk');
+                    link.href = new URL('../assets/Netra Care.apk', import.meta.url).href;
+                    link.setAttribute('download', 'Netra Care.apk');
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);

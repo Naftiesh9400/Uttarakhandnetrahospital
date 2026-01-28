@@ -11,6 +11,7 @@ import { WhatsAppChat } from "@/components/home/WhatsAppChat";
 import { InstaReel } from "@/components/InstaReel";
 import DownloadApp from "@/components/DownloadApp";
 import { JobApply } from "@/components/JobApply";
+import { GoogleTranslate } from "@/components/GoogleTranslate";
 
 const Index = () => {
   return (
@@ -27,6 +28,7 @@ const Index = () => {
       <JobApply />
       <CTASection />
       <WhatsAppChat />
+      <GoogleTranslate />
     </Layout>
   );
 };
