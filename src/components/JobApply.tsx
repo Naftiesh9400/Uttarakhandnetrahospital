@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
-import { Briefcase, Send, User, Mail, Phone, FileText, CheckCircle2, X } from 'lucide-react';
+import { Briefcase, Send, User, Mail, Phone, FileText, CheckCircle2, X, Sparkles, GraduationCap, HeartHandshake } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const JobApply = () => {
@@ -66,20 +66,63 @@ export const JobApply = () => {
 
   return (
     <>
-      <section className="py-20 bg-muted/30" id="careers">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Join Our Team</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-              We are always looking for talented individuals to join Uttarakhand Netra Hospital. 
-              Apply now to be part of our mission to provide world-class eye care.
-            </p>
-            <Button 
-              onClick={() => setIsOpen(true)} 
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg rounded-full shadow-lg shadow-primary/20 transition-all hover:scale-105"
-            >
-              Apply Now
-            </Button>
+      <section className="py-24 relative overflow-hidden" id="careers">
+        {/* Background Elements */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
+          <div className="absolute top-20 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-3xl p-8 md:p-12 shadow-xl overflow-hidden relative">
+            {/* Decorative gradient line */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-8">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20">
+                  <Sparkles className="w-4 h-4" />
+                  <span>We are Hiring</span>
+                </div>
+
+                <div className="space-y-4">
+                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tight">
+                    Join the Future of <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">Eye Care Excellence</span>
+                  </h2>
+                  <p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
+                    Be part of a compassionate team at Uttarakhand Netra Hospital. We offer a collaborative environment where your skills can truly make a difference in patients' lives.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                  <Button 
+                    onClick={() => setIsOpen(true)} 
+                    size="xl"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-14 text-lg rounded-full shadow-lg shadow-primary/25 transition-all hover:scale-105 hover:shadow-primary/40"
+                  >
+                    Apply Now
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4 relative">
+                {[
+                  { icon: User, title: "Expert Team", desc: "Collaborate with specialists" },
+                  { icon: GraduationCap, title: "Learning", desc: "Continuous growth opportunities" },
+                  { icon: HeartHandshake, title: "Impact", desc: "Transform lives daily" },
+                  { icon: Briefcase, title: "Culture", desc: "Supportive work environment" }
+                ].map((item, idx) => (
+                  <div key={idx} className="bg-background border border-border/50 p-6 rounded-2xl hover:border-primary/50 hover:shadow-md transition-all group">
+                    <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <item.icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-semibold text-foreground text-lg mb-1">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
