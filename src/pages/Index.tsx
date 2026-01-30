@@ -9,7 +9,6 @@ import { SEO } from "@/components/SEO";
 import { VideoSection } from "@/components/home/VideoSection";
 import { WhatsAppChat } from "@/components/home/WhatsAppChat";
 import { InstaReel } from "@/components/InstaReel";
-import DownloadApp from "@/components/DownloadApp";
 import { JobApply } from "@/components/JobApply";
 import { GoogleTranslate } from "@/components/GoogleTranslate";
 
@@ -23,8 +22,7 @@ const Index = () => {
       <ServicesSection />
       <DoctorsSection />
       <TestimonialsSection />
-      <InstaReel />
-      <DownloadApp />
+      {/* <InstaReel /> */}
       <JobApply />
       <CTASection />
       <WhatsAppChat />
